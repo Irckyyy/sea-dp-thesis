@@ -15,6 +15,9 @@ ENV/
 .DS_Store
 Thumbs.db
 
+# Data Mining Project
+data_mining
+
 # Raw datasets
 data/raw/
 
