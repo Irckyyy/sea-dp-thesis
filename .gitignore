@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# IDE/editor
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Raw datasets
+data/raw/
+
+# Generated/processed data
+data/processed/
+data/metadata/
+results/
+
+# GIS files anywhere
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+*.qpj
+*.sbn
+*.sbx
+*.shp.xml
+*.gpkg
+*.geojson
+*.sqlite
+*.zip
+
+# Generated outputs
+*.png
+*.jpg
+*.jpeg
+*.pdf
+*.svg
+*.csv
+*.xlsx
+
+# Logs/temp
+*.log
+tmp/
+temp/
+*.tmp
