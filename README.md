@@ -35,7 +35,7 @@ The project evaluates simplification results using the following metrics:
 
 ## Project Structure
 
-````text
+```text
 codes/
   main algo/
     sea_dp.py
@@ -54,17 +54,25 @@ data/
       Armenia-Azerbaijan/
     GADM/
       philippines/
-```wing sources:
+```
 
-- [Natural Earth Admin 0 - Countries](https://www.naturalearthdata.com/downloads/10m-cultural-vectors/) for country-level boundaries, such as Armenia and Azerbaijan.
-- [Natural Earth Admin 1 - States and Provinces](https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-1-states-provinces/) for USA state boundaries.
-- [GADM Philippines Shapefile](https://gadm.org/download_country.html) for Philippine administrative boundaries.
+---
+
+## Data
+
+Raw shapefiles are **not included** in this repository because of file size and licensing considerations.
+
+Download the required datasets from the following sources:
+
+* [Natural Earth Admin 0 - Countries](https://www.naturalearthdata.com/downloads/10m-cultural-vectors/) for country-level boundaries, such as Armenia and Azerbaijan.
+* [Natural Earth Admin 1 - States and Provinces](https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-1-states-provinces/) for USA state boundaries.
+* [GADM Philippines Shapefile](https://gadm.org/download_country.html) for Philippine administrative boundaries.
 
 After downloading, extract the files and place them manually inside:
 
 ```text
 data/raw/
-````
+```
 
 Expected dataset locations:
 
@@ -107,8 +115,8 @@ This project uses multiple datasets to test SEA-DP across different polygon comp
 Clone the repository:
 
 ```bash
-git clone <your-repository-url>
-cd douglas_peucker_thesis
+git clone https://github.com/Irckyyy/sea-dp-thesis.git
+cd sea-dp-thesis
 ```
 
 Install the required dependencies:
@@ -121,24 +129,31 @@ pip install -r requirements.txt
 
 ## How to Run
 
-``
+Run the USA test:
 
-git clone [https://github.com/Irckyyy/sea-dp-thesis.git](https://github.com/Irckyyy/sea-dp-thesis.git)
-cd sea-dp-thesis
-python codes/src/test-armenia-azerbaijan-seadp.py
+```bash
+python codes/src/test-usa.py
+```
 
-````
+Run the Armenia-Azerbaijan shared-boundary test:
+
+```bash
+python codes/src/test-azer-armenia.py
+```
 
 Run the Rizal-Laguna test:
 
 ```bash
 python codes/src/test-rizal-laguna.py
-````
+```
 
 Run the Tkinter GUI test tool:
 
-````bash
-pytws the useting. It also includes a state/provincpython codes/src/test-azer-armenia.pyive boundary testing, such as USA states or Philippine provinces.
+```bash
+python codes/src/free-test-gui.py
+```
+
+The GUI allows the user to select two countries for shared-boundary testing. It also includes a state/province option that lets the user switch to administrative boundary testing, such as USA states or Philippine provinces.
 
 ---
 
@@ -150,12 +165,12 @@ Then open a new terminal:
 
 ```text
 Terminal > New Terminal
-````
+```
 
 Make sure the terminal is opened in the project root folder. It should look similar to:
 
 ```powershell
-PS D:\Code\douglas_peucker_thesis>
+PS D:\\Code\\sea-dp-thesis>
 ```
 
 From there, install dependencies and run the test scripts.
@@ -188,7 +203,7 @@ This approach helps preserve shared borders and reduces topology-related errors.
 pip install -r requirements.txt
 
 python codes/src/test-usa.py
-python codes/src/test-armenia-azerbaijan-seadp.py
+python codes/src/test-azer-armenia.py
 python codes/src/test-rizal-laguna.py
 python codes/src/free-test-gui.py
 ```
@@ -198,7 +213,12 @@ python codes/src/free-test-gui.py
 ## Notes
 
 * Use valid polygon shapefiles as input.
-* Make sure the coordinate reference system is appropriate for distance-based simplificatory.
-* Results may vary depending on tolerance valpython codes/src/test-azer-armenia.pye
+* Make sure the coordinate reference system is appropriate for distance-based simplification.
+* Raw datasets are excluded from the repository.
+* Results may vary depending on tolerance values and dataset complexity.
+
+---
+
+## Project Title
 
 **Topology-Preserving Polygon Simplification using Douglas-Peucker for Shared Boundaries**
