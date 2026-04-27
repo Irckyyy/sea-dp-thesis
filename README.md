@@ -4,7 +4,7 @@ This project compares the standard independent **Douglas-Peucker polygon simplif
 
 The goal of SEA-DP is to simplify polygon datasets while preserving shared boundaries between adjacent polygons. Instead of simplifying each polygon independently, SEA-DP detects shared boundary chains, simplifies each shared edge only once, and applies the same simplified geometry to neighboring polygons.
 
-This helps reduce topological errors such as gaps, overlaps, and mismatched borders.
+This helps reduce shared-boundary inconsistencies and supports topology-aware simplification.
 
 ---
 
@@ -23,27 +23,27 @@ This helps reduce topological errors such as gaps, overlaps, and mismatched bord
 
 The project evaluates simplification results using the following metrics:
 
-| Metric                            | Description                                                                    |
-| --------------------------------- | ------------------------------------------------------------------------------ |
-| **Topological Error Count (TEC)** | Counts topology-related issues such as gaps, overlaps, and boundary mismatches |
-| **Shared-Edge Consistency (SEC)** | Measures whether shared boundaries remain consistent after simplification      |
-| **Hausdorff Distance (HD)**       | Measures geometric difference between original and simplified polygons         |
-| **Vertex Reduction Ratio (VRR)**  | Measures how many vertices were removed after simplification                   |
-| **Execution Time**                | Measures runtime performance of each method                                    |
+| Metric                            | Description                                                                   |
+| --------------------------------- | ----------------------------------------------------------------------------- |
+| **Topological Error Count (TEC)** | Counts topology-related issues such as gaps, overlaps, and invalid geometries |
+| **Shared-Edge Consistency (SEC)** | Measures whether shared boundaries remain consistent after simplification     |
+| **Hausdorff Distance (HD)**       | Measures geometric difference between original and simplified polygons        |
+| **Vertex Reduction Ratio (VRR)**  | Measures how many vertices were removed after simplification                  |
+| **Execution Time**                | Measures runtime performance of each method                                   |
 
 ---
 
 ## Project Structure
 
-```text
+````text
 codes/
   main algo/
     sea_dp.py
+    evaluation_metrics.py
 
   src/
-    evaluation_metrics.py
     test-usa.py
-    test-armenia-azerbaijan-seadp.py
+    test-azer-armenia.py
     test-rizal-laguna.py
     free-test-gui.py
 
@@ -54,19 +54,17 @@ data/
       Armenia-Azerbaijan/
     GADM/
       philippines/
-```
+```wing sources:
 
----
+- [Natural Earth Admin 0 - Countries](https://www.naturalearthdata.com/downloads/10m-cultural-vectors/) for country-level boundaries, such as Armenia and Azerbaijan.
+- [Natural Earth Admin 1 - States and Provinces](https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-1-states-provinces/) for USA state boundaries.
+- [GADM Philippines Shapefile](https://gadm.org/download_country.html) for Philippine administrative boundaries.
 
-## Data
-
-Raw shapefiles are **not included** in this repository because of file size and licensing considerations.
-
-Place datasets manually inside:
+After downloading, extract the files and place them manually inside:
 
 ```text
 data/raw/
-```
+````
 
 Expected dataset locations:
 
@@ -76,14 +74,31 @@ data/raw/natural_earth/Armenia-Azerbaijan/
 data/raw/GADM/philippines/
 ```
 
-Make sure each dataset folder contains the required shapefile components, such as:
+Place the extracted Natural Earth files inside the appropriate `data/raw/natural_earth/` folders. Place the extracted GADM Philippines files inside `data/raw/GADM/philippines/`.
+
+**Important:** Do not delete anything from the extracted shapefile folders. A shapefile is not only the `.shp` file. It also needs its supporting files to work properly.
+
+Make sure each dataset folder keeps the required shapefile components together, such as:
 
 ```text
 .shp
 .shx
 .dbf
 .prj
+.cpg
 ```
+
+Other files included in the downloaded dataset may also be needed, so keep the extracted folder contents intact.
+
+---
+
+## Dataset Selection
+
+This project uses multiple datasets to test SEA-DP across different polygon complexity levels and geographic contexts.
+
+* **USA states** were selected because state boundary data is widely available and generally contains simpler border shapes. This makes it useful for testing the method on clearer and more manageable polygon boundaries.
+* **Armenia and Azerbaijan** were selected as an intermediate-level case because their boundaries include more complicated polygon shapes, enclaves, and exclaves. This dataset helps evaluate how SEA-DP handles more complex shared-boundary conditions.
+* **Philippines provinces** were selected to provide a local context for the study. This makes the experiment more relevant to Philippine administrative boundaries and local geographic datasets.
 
 ---
 
@@ -106,29 +121,24 @@ pip install -r requirements.txt
 
 ## How to Run
 
-Run the USA test:
+``
 
-```bash
-python codes/src/test-usa.py
-```
-
-Run the Armenia-Azerbaijan shared-boundary test:
-
-```bash
+git clone [https://github.com/Irckyyy/sea-dp-thesis.git](https://github.com/Irckyyy/sea-dp-thesis.git)
+cd sea-dp-thesis
 python codes/src/test-armenia-azerbaijan-seadp.py
-```
+
+````
 
 Run the Rizal-Laguna test:
 
 ```bash
 python codes/src/test-rizal-laguna.py
-```
+````
 
-Run the GUI test tool:
+Run the Tkinter GUI test tool:
 
-```bash
-python codes/src/free-test-gui.py
-```
+````bash
+pytws the useting. It also includes a state/provincpython codes/src/test-azer-armenia.pyive boundary testing, such as USA states or Philippine provinces.
 
 ---
 
@@ -140,7 +150,7 @@ Then open a new terminal:
 
 ```text
 Terminal > New Terminal
-```
+````
 
 Make sure the terminal is opened in the project root folder. It should look similar to:
 
@@ -188,12 +198,7 @@ python codes/src/free-test-gui.py
 ## Notes
 
 * Use valid polygon shapefiles as input.
-* Make sure the coordinate reference system is appropriate for distance-based simplification.
-* Raw datasets are excluded from the repository.
-* Results may vary depending on tolerance values and dataset complexity.
-
----
-
-## Project Title
+* Make sure the coordinate reference system is appropriate for distance-based simplificatory.
+* Results may vary depending on tolerance valpython codes/src/test-azer-armenia.pye
 
 **Topology-Preserving Polygon Simplification using Douglas-Peucker for Shared Boundaries**
