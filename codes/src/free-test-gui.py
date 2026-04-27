@@ -8,12 +8,14 @@ Modes:
    - Country 1
    - Country 2
    - Uses Natural Earth admin_0 countries dataset
+   - Country 2 is filtered to neighbors of Country 1
 
 2. States / Provinces mode:
    - Check "States or Provinces"
    - Choose either USA or Philippines
    - State/Province 1
    - State/Province 2
+   - State/Province 2 is filtered to neighbors of State/Province 1
 
 Runs:
 - Original
@@ -186,6 +188,134 @@ def get_selected_pair(gdf, name_col, name1, name2):
     return selected
 
 
+def largest_part_for_zoom(geom):
+    """
+    Return the largest polygon part for display zoom only.
+    This prevents remote islands or tiny far-away pieces from zooming out the map.
+    """
+    if geom is None or geom.is_empty:
+        return None
+
+    if geom.geom_type == "Polygon":
+        return geom
+
+    if geom.geom_type == "MultiPolygon":
+        parts = [g for g in geom.geoms if g is not None and not g.is_empty]
+        if parts:
+            return max(parts, key=lambda g: g.area)
+
+    if geom.geom_type == "GeometryCollection":
+        polygons = []
+
+        for g in geom.geoms:
+            if g.geom_type == "Polygon":
+                polygons.append(g)
+            elif g.geom_type == "MultiPolygon":
+                polygons.extend(list(g.geoms))
+
+        polygons = [g for g in polygons if g is not None and not g.is_empty]
+
+        if polygons:
+            return max(polygons, key=lambda g: g.area)
+
+    return geom
+
+
+def set_map_zoom(ax, base_gdf, padding_ratio=0.08):
+    """
+    Zoom display to the main landmass of the selected pair.
+    This only affects the plot view, not the actual computation.
+    """
+    zoom_geoms = []
+
+    for geom in base_gdf.geometry:
+        main_geom = largest_part_for_zoom(geom)
+
+        if main_geom is not None and not main_geom.is_empty:
+            zoom_geoms.append(main_geom)
+
+    if not zoom_geoms:
+        return
+
+    zoom_gdf = gpd.GeoDataFrame(geometry=zoom_geoms, crs=base_gdf.crs)
+
+    minx, miny, maxx, maxy = zoom_gdf.total_bounds
+
+    width = maxx - minx
+    height = maxy - miny
+
+    if width <= 0 or height <= 0:
+        return
+
+    pad_x = width * padding_ratio
+    pad_y = height * padding_ratio
+
+    ax.set_xlim(minx - pad_x, maxx + pad_x)
+    ax.set_ylim(miny - pad_y, maxy + pad_y)
+    ax.set_aspect("equal")
+
+
+def get_neighbor_names(gdf, name_col, selected_name):
+    """
+    Return names of features that share a boundary with selected_name.
+
+    Fix:
+    - spatial index returns positional indices
+    - use .iloc[int(pos)] instead of .loc[pos]
+    """
+    if selected_name is None or selected_name == "":
+        return sorted(gdf[name_col].dropna().astype(str).unique())
+
+    work = gdf.reset_index(drop=True).copy()
+    rows = work[work[name_col] == selected_name]
+
+    if rows.empty:
+        return sorted(work[name_col].dropna().astype(str).unique())
+
+    selected_geom = rows.geometry.iloc[0]
+
+    if selected_geom is None or selected_geom.is_empty:
+        return []
+
+    neighbors = []
+
+    try:
+        sindex = work.sindex
+        candidate_positions = list(sindex.intersection(selected_geom.bounds))
+    except Exception:
+        candidate_positions = list(range(len(work)))
+
+    for pos in candidate_positions:
+        try:
+            row = work.iloc[int(pos)]
+        except Exception:
+            continue
+
+        other_name = str(row[name_col])
+
+        if other_name == selected_name:
+            continue
+
+        other_geom = row.geometry
+
+        if other_geom is None or other_geom.is_empty:
+            continue
+
+        try:
+            if not selected_geom.intersects(other_geom):
+                continue
+
+            shared_boundary = selected_geom.boundary.intersection(other_geom.boundary)
+
+            if not shared_boundary.is_empty and shared_boundary.length > 0:
+                neighbors.append(other_name)
+
+        except Exception:
+            continue
+
+    return sorted(set(neighbors))
+
+
 def filter_usa_admin1(gdf):
     """
     Natural Earth admin_1 files are global.
@@ -220,9 +350,8 @@ def filter_usa_admin1(gdf):
 
         if mask.sum() > 0:
             print(f"Filtered USA states using column: {col}")
-            return work[mask].copy()
+            return work[mask].copy().reset_index(drop=True)
 
-    # Fallback: Natural Earth often has US-CA, US-NV, etc.
     possible_iso_cols = [
         "iso_3166_2",
         "ISO_3166_2",
@@ -239,7 +368,6 @@ def filter_usa_admin1(gdf):
         if col.lower() == "iso_3166_2":
             mask = values.str.startswith("US-", na=False)
         else:
-            # postal fallback is weak, so only accept if typical state abbreviations
             us_postals = {
                 "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
                 "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
@@ -252,7 +380,7 @@ def filter_usa_admin1(gdf):
 
         if mask.sum() > 0:
             print(f"Filtered USA states using column: {col}")
-            return work[mask].copy()
+            return work[mask].copy().reset_index(drop=True)
 
     raise ValueError(
         "Could not filter USA states from Natural Earth admin_1 file.\n"
@@ -278,9 +406,8 @@ def load_datasets():
 
         countries = countries.dropna(subset=[country_name_col]).copy()
         countries[country_name_col] = countries[country_name_col].astype(str)
-
-        # Remove empty names
         countries = countries[countries[country_name_col].str.strip() != ""].copy()
+        countries = countries.reset_index(drop=True)
 
         datasets["countries"] = {
             "label": "Countries",
@@ -304,9 +431,8 @@ def load_datasets():
         usa_states = usa_states.dropna(subset=[usa_name_col]).copy()
         usa_states[usa_name_col] = usa_states[usa_name_col].astype(str)
         usa_states = usa_states[usa_states[usa_name_col].str.strip() != ""].copy()
-
-        # Remove duplicates like alternate rows, if any
         usa_states = usa_states.drop_duplicates(subset=[usa_name_col]).copy()
+        usa_states = usa_states.reset_index(drop=True)
 
         datasets["usa_states"] = {
             "label": "USA",
@@ -328,6 +454,7 @@ def load_datasets():
         ph_provinces = ph_provinces.dropna(subset=[ph_name_col]).copy()
         ph_provinces[ph_name_col] = ph_provinces[ph_name_col].astype(str)
         ph_provinces = ph_provinces[ph_provinces[ph_name_col].str.strip() != ""].copy()
+        ph_provinces = ph_provinces.reset_index(drop=True)
 
         datasets["ph_provinces"] = {
             "label": "Philippines",
@@ -524,6 +651,7 @@ def run_experiment(
         edgecolor="blue",
         linewidth=1.5,
     )
+    set_map_zoom(ax1, selected)
     ax1.set_title(
         f"Original\nVertices = {orig_vertices}",
         pad=12,
@@ -536,6 +664,7 @@ def run_experiment(
         edgecolor="red",
         linewidth=1.5,
     )
+    set_map_zoom(ax2, selected)
     ax2.set_title(
         f"Standard DP ({tolerance / 1000:.0f} km)\n"
         f"Vertices = {std_vertices}",
@@ -549,6 +678,7 @@ def run_experiment(
         edgecolor="green",
         linewidth=1.5,
     )
+    set_map_zoom(ax3, selected)
     ax3.set_title(
         f"SEA-DP ({tolerance / 1000:.0f} km)\n"
         f"Vertices = {sea_vertices}",
@@ -632,6 +762,20 @@ def run_experiment(
 # 5. GUI logic
 # ---------------------------------------------------------------------------
 
+def update_status(extra_text=None):
+    base = (
+        f"Loaded: "
+        f"{len(DATASETS.get('countries', {}).get('names', []))} countries, "
+        f"{len(DATASETS.get('usa_states', {}).get('names', []))} USA states, "
+        f"{len(DATASETS.get('ph_provinces', {}).get('names', []))} PH provinces"
+    )
+
+    if extra_text:
+        status.config(text=f"{base} | {extra_text}")
+    else:
+        status.config(text=base)
+
+
 def update_dropdowns():
     use_subnational = subnational_var.get()
 
@@ -680,6 +824,8 @@ def update_dropdowns():
     selected1_var.set("")
     selected2_var.set("")
 
+    update_status()
+
 
 def get_active_dataset():
     if subnational_var.get():
@@ -698,6 +844,45 @@ def get_active_dataset():
         raise ValueError("Please choose USA or Philippines.")
 
     return DATASETS["countries"], "Countries"
+
+
+def on_first_selection_changed(event=None):
+    """
+    When Country/State/Province 1 changes, filter dropdown 2
+    to only neighboring features.
+    """
+    name1 = selected1_var.get()
+    selected2_var.set("")
+
+    if not name1:
+        return
+
+    try:
+        data, _ = get_active_dataset()
+
+        neighbor_names = get_neighbor_names(
+            data["gdf"],
+            data["name_col"],
+            name1,
+        )
+
+        combo2["values"] = neighbor_names
+
+        if neighbor_names:
+            update_status(f"Neighbors detected for {name1}: {len(neighbor_names)}")
+        else:
+            update_status(f"No neighbor detected for {name1}")
+            messagebox.showinfo(
+                "No neighbor detected",
+                (
+                    f"No neighboring polygon was detected for '{name1}'.\n\n"
+                    "This can happen for islands, isolated features, or datasets "
+                    "where boundaries do not physically touch."
+                ),
+            )
+
+    except Exception as e:
+        messagebox.showerror("Neighbor filter error", str(e))
 
 
 def on_run():
@@ -781,7 +966,7 @@ title.grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 10))
 
 subtitle = ttk.Label(
     main,
-    text="Choose two countries, or enable States/Provinces to test USA states or Philippine provinces.",
+    text="Choose a first polygon, then the second dropdown will show only detected neighbors.",
 )
 subtitle.grid(row=1, column=0, columnspan=3, sticky="w", pady=(0, 14))
 
@@ -839,6 +1024,7 @@ combo1 = ttk.Combobox(
     state="readonly",
 )
 combo1.grid(row=3, column=1, columnspan=2, sticky="ew", pady=4)
+combo1.bind("<<ComboboxSelected>>", on_first_selection_changed)
 
 label2 = ttk.Label(main, textvariable=label2_text)
 label2.grid(row=4, column=0, sticky="w")
@@ -881,15 +1067,7 @@ run_button = ttk.Button(
 )
 run_button.grid(row=10, column=0, columnspan=3, sticky="ew", pady=(18, 8))
 
-status = ttk.Label(
-    main,
-    text=(
-        f"Loaded: "
-        f"{len(DATASETS.get('countries', {}).get('names', []))} countries, "
-        f"{len(DATASETS.get('usa_states', {}).get('names', []))} USA states, "
-        f"{len(DATASETS.get('ph_provinces', {}).get('names', []))} PH provinces"
-    ),
-)
+status = ttk.Label(main, text="")
 status.grid(row=11, column=0, columnspan=3, sticky="w")
 
 path_status = ttk.Label(
