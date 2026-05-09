@@ -17,9 +17,9 @@ from folium.plugins import GroupedLayerControl
 import json
 
 # ── UPDATE THESE PATHS ──────────────────────────────────────────────────────
-PATH_PH = '../../data/raw/GADM/philippines/gadm41_PHL_1.shp'
-PATH_US = '../../data/raw/natural_earth/USA/ne_10m_admin_1_states_provinces/ne_10m_admin_1_states_provinces.shp'
-PATH_INTL = '../../data/raw/natural_earth/Armenia-Azerbaijan/ne_10m_admin_0_countries/ne_10m_admin_0_countries.shp'
+PATH_PH = 'data/raw/GADM/philippines/gadm41_PHL_1.shp'
+PATH_US = 'data/raw/natural_earth/USA/ne_10m_admin_1_states_provinces/ne_10m_admin_1_states_provinces.shp'
+PATH_INTL = 'data/raw/natural_earth/Armenia-Azerbaijan/ne_10m_admin_0_countries/ne_10m_admin_0_countries.shp'
 # ────────────────────────────────────────────────────────────────────────────
 
 OUTPUT_HTML = 'seadp_dataset_explorer.html'
