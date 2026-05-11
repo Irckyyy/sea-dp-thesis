@@ -148,55 +148,90 @@ def douglas_peucker(coords: List[Tuple], epsilon: float) -> List[Tuple]:
 
 def _simplify_polygon(geom, epsilon: float):
     """Apply DP to every ring of a polygon geometry."""
+
     if geom is None or geom.is_empty:
         return geom
 
     def simplify_ring(ring_coords):
         coords = list(ring_coords)
+
         if len(coords) > 1 and coords[0] == coords[-1]:
             coords = coords[:-1]
+
         if len(coords) < 3:
             return list(ring_coords)
+
         simplified = douglas_peucker(coords, epsilon)
+
         if len(simplified) > 1 and simplified[0] != simplified[-1]:
             simplified.append(simplified[0])
+
         return simplified if len(simplified) >= 4 else list(ring_coords)
 
     def simplify_one(poly):
-        ext  = simplify_ring(list(poly.exterior.coords))
-        ints = [simplify_ring(list(r.coords)) for r in poly.interiors]
+
+        ext = simplify_ring(list(poly.exterior.coords))
+
+        ints = [
+            simplify_ring(list(r.coords))
+            for r in poly.interiors
+        ]
+
         ints = [r for r in ints if len(r) >= 4]
+
         try:
             result = Polygon(ext, ints)
-            return make_valid(result) if not result.is_valid else result
+
+            # Fix invalid geometry safely
+            fixed = make_valid(result) if not result.is_valid else result
+
+            # Only allow Polygon or MultiPolygon outputs
+            if fixed.geom_type == "Polygon":
+                return fixed
+
+            if fixed.geom_type == "MultiPolygon":
+                return fixed
+
+            # Fallback if GeometryCollection/etc appears
+            return poly
+
         except Exception:
             return poly
 
+    # Single polygon
     if geom.geom_type == 'Polygon':
         return simplify_one(geom)
+
+    # MultiPolygon
     if geom.geom_type == 'MultiPolygon':
+
         parts = []
 
-    for p in geom.geoms:
-        simplified = simplify_one(p)
+        for p in geom.geoms:
 
-        if simplified is None or simplified.is_empty:
-            continue
+            simplified = simplify_one(p)
 
-        # Flatten nested MultiPolygons
-        if simplified.geom_type == 'Polygon':
-            parts.append(simplified)
+            if simplified is None or simplified.is_empty:
+                continue
 
-        elif simplified.geom_type == 'MultiPolygon':
-            parts.extend([
-                g for g in simplified.geoms
-                if g is not None and not g.is_empty
-            ])
+            # Normal polygon
+            if simplified.geom_type == 'Polygon':
+                parts.append(simplified)
 
-    if not parts:
-        return geom
+            # Flatten nested multipolygons
+            elif simplified.geom_type == 'MultiPolygon':
 
-    return parts[0] if len(parts) == 1 else MultiPolygon(parts)
+                parts.extend([
+                    g for g in simplified.geoms
+                    if g is not None and not g.is_empty
+                ])
+
+        if not parts:
+            return geom
+
+        return parts[0] if len(parts) == 1 else MultiPolygon(parts)
+
+    return geom
     
 
 
