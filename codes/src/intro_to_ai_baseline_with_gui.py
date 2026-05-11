@@ -175,12 +175,29 @@ def _simplify_polygon(geom, epsilon: float):
     if geom.geom_type == 'Polygon':
         return simplify_one(geom)
     if geom.geom_type == 'MultiPolygon':
-        parts = [simplify_one(p) for p in geom.geoms]
-        parts = [p for p in parts if p and not p.is_empty]
-        if not parts:
-            return geom
-        return parts[0] if len(parts) == 1 else MultiPolygon(parts)
-    return geom
+        parts = []
+
+    for p in geom.geoms:
+        simplified = simplify_one(p)
+
+        if simplified is None or simplified.is_empty:
+            continue
+
+        # Flatten nested MultiPolygons
+        if simplified.geom_type == 'Polygon':
+            parts.append(simplified)
+
+        elif simplified.geom_type == 'MultiPolygon':
+            parts.extend([
+                g for g in simplified.geoms
+                if g is not None and not g.is_empty
+            ])
+
+    if not parts:
+        return geom
+
+    return parts[0] if len(parts) == 1 else MultiPolygon(parts)
+    
 
 
 def _preprocess(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
