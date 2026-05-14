@@ -30,12 +30,14 @@ Metrics:
 - Execution Time
 """
 
+from logging import root
 import os
 import sys
 import time
 import glob
 import tkinter as tk
 from tkinter import ttk, messagebox
+from metrics_dashboard import show_metrics_dashboard, results_from_experiment
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -97,13 +99,19 @@ GADM_PH_ROOT = os.path.join(
     "philippines",
 )
 
-COUNTRIES_PATH = find_first([
-    os.path.join(NATURAL_EARTH_ROOT, "**", "ne_*admin_0_countries.shp"),
-])
+COUNTRIES_PATH = os.path.join(
+    NATURAL_EARTH_ROOT,
+    "world",
+    "ne_10m_admin_0_countries",
+    "ne_10m_admin_0_countries.shp"
+)
 
-USA_STATES_PATH = find_first([
-    os.path.join(NATURAL_EARTH_ROOT, "USA", "**", "ne_*admin_1_states_provinces.shp"),
-])
+USA_STATES_PATH = os.path.join(
+    NATURAL_EARTH_ROOT,
+    "USA",
+    "ne_10m_admin_1_states_provinces",
+    "ne_10m_admin_1_states_provinces.shp"
+)
 
 PH_PROVINCES_PATH = find_first([
     os.path.join(GADM_PH_ROOT, "gadm41_PHL_1.shp"),
@@ -754,7 +762,20 @@ def run_experiment(
     )
 
     plt.show()
-
+    dashboard_data = results_from_experiment(
+        feature1=feature1, feature2=feature2,
+        title_name=title_name, tolerance=tolerance,
+        orig_stats=orig_stats, orig_vertices=orig_vertices,
+        std_new_tec=std_new_tec, std_raw_stats=std_raw_stats,
+        std_sec=std_sec, std_hd=std_hd, std_vrr=std_vrr,
+        std_time=std_time, std_vertices=std_vertices,
+        sea_new_tec=sea_new_tec, sea_raw_stats=sea_raw_stats,
+        sea_sec=sea_sec, sea_hd=sea_hd, sea_vrr=sea_vrr,
+        sea_time=sea_time, sea_vertices=sea_vertices,
+        sea_algo_stats=sea_algo_stats,
+    )
+    show_metrics_dashboard(dashboard_data, parent=root)
+    
     return out_path
 
 

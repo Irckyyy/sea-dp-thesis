@@ -40,10 +40,6 @@ import matplotlib.pyplot as plt
 from shapely.geometry import MultiPolygon, Polygon
 from shapely.validation import make_valid
 
-# ---------------------------------------------------------------------------
-# 0. Paths — same structure as free-test-gui.py
-# ---------------------------------------------------------------------------
-
 SRC_PATH = os.path.dirname(os.path.abspath(__file__))
 ROOT     = os.path.abspath(os.path.join(SRC_PATH, "..", ".."))
 
@@ -270,7 +266,7 @@ def baseline_dp_simplify(gdf: gpd.GeoDataFrame, epsilon: float):
 
 
 # ===========================================================================
-# Dataset utilities — same as free-test-gui.py
+# Dataset utilities 
 # ===========================================================================
 
 def detect_name_col(gdf, candidates):

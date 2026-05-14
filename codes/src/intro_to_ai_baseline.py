@@ -150,7 +150,7 @@ def douglas_peucker(coords: Coords, epsilon: float) -> Coords:
         # Module 3: Compute perpendicular distance
         d = _perpendicular_distance(coords[i], start, end)
 
-        # Module 4: d > dmax? → update
+        # Module 4 and 5: d > dmax? → update
         if d > dmax:
             dmax  = d
             index = i
